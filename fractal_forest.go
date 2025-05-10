@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"math/rand"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -175,7 +177,13 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 
 func forestHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "image/svg+xml")
+	w.Header().Set("Cache-Control", "public, max-age=3600")
 	fmt.Fprint(w, generateForest())
+}
+
+func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprint(w, "OK")
 }
 
 func main() {
@@ -185,10 +193,17 @@ func main() {
 	// Set up routes
 	http.HandleFunc("/", homeHandler)
 	http.HandleFunc("/forest", forestHandler)
+	http.HandleFunc("/health", healthCheckHandler)
+
+	// Get port from environment variable or use default
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 
 	// Start server
-	fmt.Println("Server starting at http://localhost:8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
-		fmt.Println("Error starting server:", err)
+	log.Printf("Server starting on port %s", port)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		log.Fatalf("Error starting server: %v", err)
 	}
 }
